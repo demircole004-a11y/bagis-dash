@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AFAD Power BI - Demografik & Coğrafi Bağışçı Analizi</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Inter',sans-serif;background:#f3f2f1;color:#252423;}
+.wrap{padding:20px;display:flex;flex-direction:column;gap:16px;}
+
+/* HEADER & FILTERS (Power BI Slicers) */
+.filter-bar{display:flex; align-items:center; gap:12px; background:#fff; padding:12px 20px; border-radius:4px; border:1px solid #e1dfdd; box-shadow: 0 2px 4px rgba(0,0,0,0.02); flex-wrap:wrap;}
+.f-group{display:flex; flex-direction:column; gap:4px;}
+.f-lbl{font-size:10px; font-weight:700; color:#605e5c; text-transform:uppercase;}
+.f-sel{font-size:12px; padding:6px 12px; border:1px solid #c8d4e8; border-radius:2px; outline:none; color:#252423; cursor:pointer; min-width:140px;}
+.f-btn{background:#edebe9; color:#252423; border:1px solid #8a8886; padding:8px 16px; border-radius:2px; font-size:12px; font-weight:600; cursor:pointer; align-self:flex-end; margin-left:auto; transition:background 0.2s;}
+.f-btn:hover{background:#e1dfdd;}
+
+.panel-title{font-size:14px;font-weight:700;color:#0054a6;letter-spacing:.3px;border-left:4px solid #f47920;padding-left:12px; margin-bottom:4px;}
+
+/* KPI ROW (5 KOLON) */
+.kpi-row{display:grid;grid-template-columns:repeat(5,1fr);gap:16px;}
+.kpi{background:#fff;border-radius:4px;padding:16px;border:1px solid #e1dfdd; box-shadow: 0 2px 4px rgba(0,0,0,0.06); border-left:4px solid transparent;}
+.kpi-blue{border-left-color:#0054a6;}
+.kpi-orange{border-left-color:#f47920;}
+.kpi-gray{border-left-color:#8a8886;}
+.kpi-green{border-left-color:#107c41;}
+.kpi-purple{border-left-color:#7c3aed;}
+.kpi-lbl{font-size:11px;color:#605e5c;font-weight:600;text-transform:uppercase;margin-bottom:8px;}
+.kpi-val{font-size:24px;font-weight:300;color:#252423;line-height:1.1; letter-spacing:-0.5px;}
+.kpi-sub{font-size:11px;margin-top:8px;color:#605e5c; display:flex; align-items:center; gap:4px;}
+.up{color:#107c41; font-weight:600;} .dn{color:#a4262c; font-weight:600;}
+
+/* GRIDS */
+.two-col{display:grid;grid-template-columns:1.2fr 1fr;gap:16px;}
+.three-col{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;}
+.chart-box{background:#fff;border-radius:4px;padding:16px 20px;border:1px solid #e1dfdd; box-shadow: 0 2px 4px rgba(0,0,0,0.06); display:flex; flex-direction:column;}
+.chart-title{font-size:14px;font-weight:600;color:#252423;margin-bottom:4px;}
+.chart-sub{font-size:11px;color:#605e5c;margin-bottom:16px; line-height:1.3;}
+
+/* HIERARCHY TREE (Power BI Matrix Style) */
+.tree-wrap{display:flex; flex-direction:column; gap:6px; flex:1; justify-content:center;}
+.tr-node{display:flex; align-items:center; justify-content:space-between; padding:8px 12px; background:#fff; border:1px solid #e1dfdd; border-radius:2px;}
+.tr-indent-1{margin-left:24px; border-left:3px solid #0054a6;}
+.tr-indent-2{margin-left:48px; border-left:3px solid #107c41;}
+.tr-indent-1-alt{margin-left:24px; border-left:3px solid #8a8886;}
+.tr-lbl{font-size:12px; font-weight:600; color:#252423; display:flex; align-items:center; gap:8px; width:160px; flex-shrink:0;}
+.tr-pct{font-size:10px; color:#605e5c; background:#f3f2f1; padding:2px 5px; border-radius:2px; font-weight:700;}
+.tr-bar-wrap{flex:1; height:18px; background:#f3f2f1; margin:0 16px; border-radius:2px; overflow:hidden;}
+.tr-bar{height:100%; border-radius:2px;}
+.tr-val{font-size:13px; font-weight:700; color:#252423; width:70px; text-align:right; flex-shrink:0;}
+
+/* PIE & DONUT STYLES */
+.pie-container{display:flex; align-items:center; gap:24px; flex:1;}
+.pie-canvas-wrap{position:relative; width:180px; height:180px; flex-shrink:0;}
+.pie-legend{display:flex; flex-direction:column; gap:8px; flex:1;}
+.pleg-item{display:flex; align-items:center; gap:8px; font-size:12px; color:#252423;}
+.pleg-dot{width:12px; height:12px; border-radius:2px; flex-shrink:0;}
+.pleg-pct{font-weight:700; margin-left:auto; font-size:13px;}
+.pleg-val{font-size:11px; color:#605e5c; width:60px; text-align:right;}
+
+/* HORIZONTAL DATA BARS (İl, Ülke, Kampanya) */
+.bar-list{display:flex; flex-direction:column; gap:8px; flex:1; overflow-y:auto;}
+.bar-row{display:flex; align-items:center; gap:12px;}
+.bar-lbl{width:110px; font-size:12px; font-weight:600; color:#252423; text-align:right; flex-shrink:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+.bar-track{flex:1; background:#f3f2f1; height:20px; border-radius:2px; position:relative;}
+.bar-fill{height:100%; border-radius:2px; display:flex; align-items:center; padding-left:8px;}
+.bar-val{width:60px; font-size:12px; font-weight:600; color:#252423; text-align:right; flex-shrink:0;}
+
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+  <div class="filter-bar">
+    <div class="f-group">
+      <span class="f-lbl">Dönem</span>
+      <select class="f-sel">
+        <option>Tüm Zamanlar</option>
+        <option>Bu Yıl</option>
+        <option>Son 12 Ay</option>
+      </select>
+    </div>
+    <div class="f-group">
+      <span class="f-lbl">Bağışçı Tipi</span>
+      <select class="f-sel">
+        <option>Tümü</option>
+        <option>Kayıtlı</option>
+        <option>Anonim</option>
+        <option>Düzenli (Abone)</option>
+      </select>
+    </div>
+    <div class="f-group">
+      <span class="f-lbl">Kampanya</span>
+      <select class="f-sel">
+        <option>Tümü (Genel)</option>
+        <option>Deprem Bağışları</option>
+        <option>Filistin Yardımı</option>
+      </select>
+    </div>
+    <div class="f-group">
+      <span class="f-lbl">Kıta / Bölge</span>
+      <select class="f-sel">
+        <option>Tümü (Küresel)</option>
+        <option>Yurtiçi</option>
+        <option>Avrupa</option>
+        <option>Kuzey Amerika</option>
+      </select>
+    </div>
+    <button class="f-btn">Filtreleri Uygula</button>
+  </div>
+
+  <div class="panel-title">Panel 3 — Demografik ve Coğrafi Bağışçı Analizi</div>
+
+  <div class="kpi-row">
+    <div class="kpi kpi-blue">
+      <div class="kpi-lbl">Toplam Bağışçı Sayısı</div>
+      <div class="kpi-val">84.230</div>
+      <div class="kpi-sub"><span class="up">▲ %9.4</span> sistemdeki tekil kişi</div>
+    </div>
+    <div class="kpi kpi-orange">
+      <div class="kpi-lbl">Kayıtlı Bağışçı Sayısı</div>
+      <div class="kpi-val">60.770</div>
+      <div class="kpi-sub"><span class="up">▲ %12</span> kayıt olma eğilimi</div>
+    </div>
+    <div class="kpi kpi-gray">
+      <div class="kpi-lbl">Anonim Bağışçı Sayısı</div>
+      <div class="kpi-val">23.460</div>
+      <div class="kpi-sub">Kayıtsız hızlı bağış yapanlar</div>
+    </div>
+    <div class="kpi kpi-green">
+      <div class="kpi-lbl">Düzenli Bağışçı Sayısı</div>
+      <div class="kpi-val">12.450</div>
+      <div class="kpi-sub"><span class="up">▲ %5.2</span> aktif aboneler</div>
+    </div>
+    <div class="kpi kpi-purple">
+      <div class="kpi-lbl">Yurtdışı Bağışçılar</div>
+      <div class="kpi-val">4.730</div>
+      <div class="kpi-sub"><span class="up">▲ 64</span> farklı ülkeden</div>
+    </div>
+  </div>
+
+  <div class="two-col">
+    <div class="chart-box">
+      <div class="chart-title">Bağışçı Kayıt ve Sadakat Kırılımı</div>
+      <div class="chart-sub">Toplam kitlenin kendi içerisindeki dönüşüm hiyerarşisi.</div>
+      <div class="tree-wrap" id="tree-container">
+        </div>
+    </div>
+
+    <div class="chart-box">
+      <div class="chart-title">Yurtiçi ve Yurtdışı Katılım Oranları</div>
+      <div class="chart-sub">Bağışçıların coğrafi çıkış noktalarına göre (IP/Kart bazlı) dağılımı.</div>
+      <div class="pie-container">
+        <div class="pie-canvas-wrap"><canvas id="c-donut-geo"></canvas></div>
+        <div class="pie-legend" id="leg-geo"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="three-col">
+    <div class="chart-box">
+      <div class="chart-title">İllere Göre (İlk 10)</div>
+      <div class="chart-sub">Yurtiçi bağış yapan 79.500 kişinin illere göre dağılımı.</div>
+      <div class="bar-list" id="city-area"></div>
+    </div>
+
+    <div class="chart-box">
+      <div class="chart-title">Ülkelere Göre (İlk 7)</div>
+      <div class="chart-sub">Yurtdışından gelen 4.730 kişinin ülkelere göre dağılımı.</div>
+      <div class="bar-list" id="country-area"></div>
+    </div>
+
+    <div class="chart-box" style="border-top: 4px solid #107c41;">
+      <div class="chart-title">Düzenli Bağış Başlatan Kampanyalar</div>
+      <div class="chart-sub">Kampanyalara kayıtlı düzenli bağışçılar</div>
+      <div class="bar-list" id="regular-campaign-area"></div>
+    </div>
+  </div>
+
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script>
+// --- CHART.JS GLOBAL AYARLARI ---
+Chart.defaults.font.family = "'Segoe UI', 'Inter', sans-serif";
+Chart.defaults.color = '#605e5c';
+Chart.defaults.plugins.tooltip.backgroundColor = '#ffffff';
+Chart.defaults.plugins.tooltip.titleColor = '#252423';
+Chart.defaults.plugins.tooltip.bodyColor = '#252423';
+Chart.defaults.plugins.tooltip.borderColor = '#e1dfdd';
+Chart.defaults.plugins.tooltip.borderWidth = 1;
+
+// ==========================================
+// 1. BAĞIŞÇI HİYERARŞİSİ (MATRIX)
+// ==========================================
+const totalDonor = 84230;
+const kayitli = 60770;
+const anonim = 23460;
+const kayitliTek = 48320;
+const kayitliDuz = 12450;
+
+const pKayitli = ((kayitli / totalDonor) * 100).toFixed(1);
+const pAnonim  = ((anonim / totalDonor) * 100).toFixed(1);
+const pTek     = ((kayitliTek / kayitli) * 100).toFixed(1); 
+const pDuz     = ((kayitliDuz / kayitli) * 100).toFixed(1); 
+
+const treeHtml = `
+  <div class="tr-node">
+    <div class="tr-lbl">Toplam Bağışçı <span class="tr-pct">%100</span></div>
+    <div class="tr-bar-wrap"><div class="tr-bar" style="width:100%; background:#0054a6;"></div></div>
+    <div class="tr-val">${totalDonor.toLocaleString('tr-TR')}</div>
+  </div>
+
+  <div class="tr-node tr-indent-1">
+    <div class="tr-lbl">Kayıtlı Bağışçı <span class="tr-pct">%${pKayitli}</span></div>
+    <div class="tr-bar-wrap"><div class="tr-bar" style="width:${pKayitli}%; background:#f47920;"></div></div>
+    <div class="tr-val">${kayitli.toLocaleString('tr-TR')}</div>
+  </div>
+
+  <div class="tr-node tr-indent-2">
+    <div class="tr-lbl" style="font-weight:500;">Tek Seferlik <span class="tr-pct">%${pTek}</span></div>
+    <div class="tr-bar-wrap"><div class="tr-bar" style="width:${pTek}%; background:#107c41;"></div></div>
+    <div class="tr-val">${kayitliTek.toLocaleString('tr-TR')}</div>
+  </div>
+
+  <div class="tr-node tr-indent-2">
+    <div class="tr-lbl" style="font-weight:500;">Düzenli (Abone) <span class="tr-pct">%${pDuz}</span></div>
+    <div class="tr-bar-wrap"><div class="tr-bar" style="width:${pDuz}%; background:#107c41;"></div></div>
+    <div class="tr-val">${kayitliDuz.toLocaleString('tr-TR')}</div>
+  </div>
+
+  <div class="tr-node tr-indent-1-alt">
+    <div class="tr-lbl">Anonim Bağışçı <span class="tr-pct">%${pAnonim}</span></div>
+    <div class="tr-bar-wrap"><div class="tr-bar" style="width:${pAnonim}%; background:#8a8886;"></div></div>
+    <div class="tr-val">${anonim.toLocaleString('tr-TR')}</div>
+  </div>
+`;
+document.getElementById('tree-container').innerHTML = treeHtml;
+
+// ==========================================
+// 2. YURTİÇİ VS YURTDIŞI (DONUT CHART)
+// ==========================================
+const geoData = [
+  { label: 'Yurtiçi (Türkiye)', count: 79500, color: '#0054a6' }, 
+  { label: 'Yurtdışı (Uluslararası)', count: 4730,  color: '#7c3aed' }
+];
+const totalGeo = geoData.reduce((acc, val) => acc + val.count, 0);
+
+new Chart(document.getElementById('c-donut-geo'), {
+  type: 'doughnut',
+  data: {
+    labels: geoData.map(d => d.label),
+    datasets: [{
+      data: geoData.map(d => d.count),
+      backgroundColor: geoData.map(d => d.color),
+      borderWidth: 2, borderColor: '#ffffff'
+    }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false, cutout: '65%',
+    plugins: { 
+      legend: { display: false },
+      tooltip: { callbacks: { label: c => ` ${c.parsed.toLocaleString('tr-TR')} Kişi` } }
+    }
+  }
+});
+
+const legGeo = document.getElementById('leg-geo');
+geoData.forEach(d => {
+  const pct = ((d.count / totalGeo) * 100).toFixed(1);
+  legGeo.innerHTML += `
+    <div class="pleg-item">
+      <span class="pleg-dot" style="background:${d.color}"></span>
+      <span>${d.label}</span>
+      <span class="pleg-val">${d.count.toLocaleString('tr-TR')}</span>
+      <span class="pleg-pct" style="color:${d.color}">%${pct}</span>
+    </div>
+  `;
+});
+
+// ==========================================
+// 3. İLLERE GÖRE BAĞIŞÇI SAYISI
+// ==========================================
+const cities = [
+  { name: 'İstanbul', count: 28400 }, { name: 'Ankara', count: 11200 },
+  { name: 'İzmir', count: 7500 }, { name: 'Bursa', count: 4100 },
+  { name: 'Antalya', count: 3800 }, { name: 'Adana', count: 3100 },
+  { name: 'Konya', count: 2850 }, { name: 'Gaziantep', count: 2400 },
+  { name: 'Kocaeli', count: 2100 }, { name: 'Kayseri', count: 1800 }
+];
+const cityArea = document.getElementById('city-area');
+const maxCity = Math.max(...cities.map(c => c.count));
+
+cities.forEach(c => {
+  const pct = (c.count / maxCity * 100).toFixed(1);
+  cityArea.innerHTML += `
+    <div class="bar-row">
+      <span class="bar-lbl" title="${c.name}">${c.name}</span>
+      <div class="bar-track">
+        <div class="bar-fill" style="width:${pct}%; background:#0054a6;"></div>
+      </div>
+      <span class="bar-val">${c.count.toLocaleString('tr-TR')}</span>
+    </div>
+  `;
+});
+
+// ==========================================
+// 4. ÜLKELERE GÖRE YURTDIŞI KATILIMI
+// ==========================================
+const countries = [
+  { name: 'Almanya', count: 1850 }, { name: 'Amerika Birleşik Dev.', count: 840 },
+  { name: 'Hollanda', count: 620 }, { name: 'Fransa', count: 430 },
+  { name: 'İngiltere (UK)', count: 380 }, { name: 'Avusturya', count: 210 },
+  { name: 'Belçika', count: 180 }
+];
+const countryArea = document.getElementById('country-area');
+const maxCountry = Math.max(...countries.map(c => c.count));
+
+countries.forEach(c => {
+  const pct = (c.count / maxCountry * 100).toFixed(1);
+  countryArea.innerHTML += `
+    <div class="bar-row">
+      <span class="bar-lbl" title="${c.name}">${c.name}</span>
+      <div class="bar-track">
+        <div class="bar-fill" style="width:${pct}%; background:#7c3aed;"></div>
+      </div>
+      <span class="bar-val">${c.count.toLocaleString('tr-TR')}</span>
+    </div>
+  `;
+});
+
+// ==========================================
+// 5. DÜZENLİ BAĞIŞIN BAŞLADIĞI KAMPANYALAR
+// ==========================================
+const regCampaigns = [
+  { name: 'Filistin Yardımı', count: 5200 },
+  { name: 'Deprem Bağışları', count: 3800 },
+  { name: 'Gazze Zekat', count: 1450 },
+  { name: 'Genel Bağış', count: 1100 },
+  { name: 'Yangın ve Sel Afeti', count: 900 }
+];
+const regArea = document.getElementById('regular-campaign-area');
+const maxRegCamp = Math.max(...regCampaigns.map(c => c.count));
+
+regCampaigns.forEach(c => {
+  const pct = (c.count / maxRegCamp * 100).toFixed(1);
+  regArea.innerHTML += `
+    <div class="bar-row">
+      <span class="bar-lbl" title="${c.name}">${c.name}</span>
+      <div class="bar-track">
+        <div class="bar-fill" style="width:${pct}%; background:#107c41;"></div>
+      </div>
+      <span class="bar-val">${c.count.toLocaleString('tr-TR')}</span>
+    </div>
+  `;
+});
+
+</script>
+</body>
+</html>
